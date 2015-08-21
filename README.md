@@ -53,15 +53,9 @@ This will trigger using the application defaults starting at the current time.
 This is a **Proof of Concept (PoC)** only.
 It is by no-means conclusive and is only being carried out as a part time exercise.
 
-## Known issues
-* When entering an alphabet as arguments to the application, no verification is carried out to ensure replacements
-  are also offered (alphabet and replacements are dependent on each other)
-* When entering both an alphabet and replacements as arguments to the application, no check is made to ensure
-  the replacements contain all the missing characters from the alphabet
-
 ## To-Do
-* [M] Argument verification
-* [S] Put some tests around the application
+* [M] Refactor classes into relvant sub-modules
+* [M] Put some tests around the application
 * [C] Add in functionality for enciphering messages as well as deciphering them
 * [W] Add graphical controls for updating the alphabet, associated replacements, speed and increment
 

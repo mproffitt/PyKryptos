@@ -1,7 +1,8 @@
-import argparse
+from argparse import ArgumentParser, Action, ArgumentError
 import curses
 from datetime import datetime, timedelta
 from time import sleep
+import re
 
 class TimeDecipher():
     ciphertext = 'OBKRUOXOGHULBSOLIFBBWFLRVQQPRNGKSSOTWTQSJQSSEKZZWATJKLUDIAWINFBNYPVTTMZFPKWGDKZXTJCDIGKUHUAUEKCAR'
@@ -210,6 +211,42 @@ class LampType():
             return Lamp(y, x, height, width, color, tc.get_next() if id != LampType.SECONDS else tc.get_next_cipher())
         return Lamp(y, x, height, width, color, '')
 
+class AlphabetValidatorAction(Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        if len(namespace.replace) != 8:
+            parser.error(
+                'Alphabet is reliant on the replace parameter being set and containing valid replacements'
+            )
+
+        if len(values) != len(TimeDecipher.alphabet):
+            parser.error(
+                'Invalid length for alphabet. Must be ' + str(len(TimeDecipher.alphabet)).zfill(2) + ' characters in length'
+            )
+
+        setattr(namespace, self.dest, values)
+
+class AlphabetReplacementsValidatorAction(Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        if len(namespace.alphabet) == 0:
+            parser.error('alphabet is required for replacements')
+        if not re.match('[A-Z]{2},[A-Z]{2},[A-Z]{2}', values):
+            parser.error('replacements must match the format `CR,CR,CR`')
+
+        replacements = [(a, b) for a, b in [c for c in args.replace.upper().split(',')]]
+        for replacement in replacements:
+            if replacement[0] in namespace.alphabet and replacement[1] not in namespace.alphabet:
+                continue
+            parser.error('replacements contains invalid values')
+
+class TimeValidatorAction(Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        try:
+            if not re.match('\d+:\d+:\d+', values):
+                raise AttributeError('Time must be in the format HH:MM:SS')
+            time = datetime.strptime('%H:%M:%S', values)
+        except:
+            parser.error('Time must be in the format HH:MM:SS')
+
 class Mengenlehreuhr():
     PANEL_TYPES = [
         LampType( # seconds
@@ -279,7 +316,9 @@ class Mengenlehreuhr():
         screen_h, screen_w = self.screen.getmaxyx()
 
         # Try and center the clock on the screen
-        y = (screen_h // 2) - ((((LampType.DEFAULT_HEIGHT + LampType.DEFAULT_MARGIN) * len(self.PANEL_TYPES)) + Log.DEFAULT_HEIGHT) // 2)
+        y = (screen_h // 2) - (
+            (((LampType.DEFAULT_HEIGHT + LampType.DEFAULT_MARGIN) * len(self.PANEL_TYPES)) + Log.DEFAULT_HEIGHT) // 2
+        )
         self.lamps = []
         for lamp_type in self.PANEL_TYPES:
             self.lamps.append(lamp_type.create_windows(self.time_decipher, y, screen_w))
@@ -317,11 +356,12 @@ class Mengenlehreuhr():
         self.log += LogItem(time, self.time_decipher.get_character(index), (self.time_decipher.cipher_index - 1))
 
     def _parse_args(self):
-        parser = argparse.ArgumentParser(description='Execute the Berlin Clock')
+        parser = ArgumentParser(description='Execute the Berlin Clock')
         parser.add_argument(
             '--time',
             help='Start the clock at the given time',
-            default='now'
+            default='now',
+            action=TimeValidatorAction
         )
 
         parser.add_argument(
@@ -340,13 +380,15 @@ class Mengenlehreuhr():
         parser.add_argument(
             '--alphabet',
             help='An alternative alphabet to use',
-            default=''.join(TimeDecipher.alphabet)
+            default=''.join(TimeDecipher.alphabet),
+            action=AlphabetValidatorAction
         )
 
         parser.add_argument(
             '--replace',
             help='A list of characters and their replacements',
-            default=','.join([''.join(a) for a in TimeDecipher.replacements])
+            default=','.join([''.join(a) for a in TimeDecipher.replacements]),
+            action=AlphabetReplacementsValidatorAction
         )
 
         args = parser.parse_args()

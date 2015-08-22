@@ -1,4 +1,6 @@
 from argparse import Action
+from pykryptos.time import Decipher
+from datetime import datetime
 import re
 
 class AlphabetValidator(Action):
@@ -8,11 +10,10 @@ class AlphabetValidator(Action):
                 'Alphabet is reliant on the replace parameter being set and containing valid replacements'
             )
 
-        if len(values) != len(TimeDecipher.alphabet):
+        if len(values) != len(Decipher.alphabet):
             parser.error(
-                'Invalid length for alphabet. Must be ' + str(len(TimeDecipher.alphabet)).zfill(2) + ' characters in length'
+                'Invalid length for alphabet. Must be ' + str(len(Decipher.alphabet)).zfill(2) + ' characters in length'
             )
-
         setattr(namespace, self.dest, values)
 
 class ReplacementValidator(Action):
@@ -27,14 +28,17 @@ class ReplacementValidator(Action):
             if replacement[0] in namespace.alphabet and replacement[1] not in namespace.alphabet:
                 continue
             parser.error('replacements contains invalid values')
+        setattr(namespace, self.dest, values)
 
 class TimeValidator(Action):
     def __call__(self, parser, namespace, values, option_string=None):
         try:
             if not re.match('\d+:\d+:\d+', values):
                 raise AttributeError('Time must be in the format HH:MM:SS')
-            time = datetime.strptime('%H:%M:%S', values)
-        except:
+            time = datetime.strptime(values, '%H:%M:%S')
+        except Exception as e:
+            raise
             parser.error('Time must be in the format HH:MM:SS')
+        setattr(namespace, self.dest, values)
 
 

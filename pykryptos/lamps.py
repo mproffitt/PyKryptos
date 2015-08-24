@@ -50,23 +50,23 @@ class LampType():
         self.color  = color
         self.state  = state
 
-    def create_windows(self,tc,  y, screen_w):
+    def create_windows(self, decipher, y, screen_w):
         """Make a row of n center-justified curses windows."""
         screen_mid = screen_w // 2
         total_width = self.n * self.width + (self.n - 1) * self.margin
         left = screen_mid - total_width // 2
         return [
             self._create_window(
-                tc, y, left + i * (self.width + self.margin),
+                decipher, y, left + i * (self.width + self.margin),
                 self.height, self.width, self.color, self.id
         )
             for i in range(self.n)
         ]
 
     @staticmethod
-    def _create_window(tc, y, x, height, width, color, id):
+    def _create_window(decipher, y, x, height, width, color, id):
         if id != LampType.LOG:
-            return Lamp(y, x, height, width, color, tc.get_next() if id != LampType.SECONDS else tc.get_next_cipher())
+            return Lamp(y, x, height, width, color, decipher.get_next() if id != LampType.SECONDS else '')
         return Lamp(y, x, height, width, color, '')
 
 

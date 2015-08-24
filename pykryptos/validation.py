@@ -23,7 +23,7 @@ class ReplacementValidator(Action):
         if not re.match('[A-Z]{2},[A-Z]{2},[A-Z]{2}', values):
             parser.error('replacements must match the format `CR,CR,CR`')
 
-        replacements = [(a, b) for a, b in [c for c in args.replace.upper().split(',')]]
+        replacements = [(a, b) for a, b in [c for c in values.upper().split(',')]]
         for replacement in replacements:
             if replacement[0] in namespace.alphabet and replacement[1] not in namespace.alphabet:
                 continue

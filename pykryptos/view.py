@@ -3,7 +3,7 @@ from pykryptos.cipher import Decipher
 from pykryptos.lamps import LampType
 
 class TimeItem():
-    def __init__(self, character='',log=None,time=None):
+    def __init__(self, character=' ',log=None,time=None):
         self.character = character
         self.log       = log
         self.time      = time

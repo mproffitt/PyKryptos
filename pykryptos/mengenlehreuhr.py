@@ -64,12 +64,13 @@ class Mengenlehreuhr():
         time_item = self._get_time_item(time)
         if time.second % 2 == 0:
             time_item.character = self.decipher.get_next_cipher()
-            self.clock.update(time_item)
-            character = (
-                self.decipher.add(time_item.character, self.clock.visible)
-                if self.args.method == 'add' else
-                    self.decipher.subtract(time_item.character, self.clock.visible)
-            )
+        self.clock.update(time_item)
+        character = (
+            self.decipher.add(time_item.character, self.clock.visible)
+            if self.args.method == 'add' else
+                self.decipher.subtract(time_item.character, self.clock.visible)
+        )
+        if time.second % 2 == 0:
             self.clock.write(
                 LogItem(
                     time,

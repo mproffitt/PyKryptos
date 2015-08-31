@@ -32,7 +32,9 @@ The application is written in the Python language and works with both 2.7 and 3.
 * curses
 
 ## Usage
-Running the application is as simple as `python kryptos.py`
+Set the executable permission of `kryptos` file with `chmod +x kryptos`
+Run the application with `./kryptos`
+
 This will trigger using the application defaults starting at the current time.
 
 ### Advanced options
@@ -48,6 +50,7 @@ This will trigger using the application defaults starting at the current time.
     --replace (CR,CR,CR)
       Replace the following characters with their substitutes
       (Default `QL,UO,AE`)
+    --ciphertext (string) the message to encode / decode
 
 ## Note:
 This is a **Proof of Concept (PoC)** only.

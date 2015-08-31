@@ -1,6 +1,6 @@
 from argparse import ArgumentParser, Action
 from pykryptos.validation import TimeValidator, AlphabetValidator, ReplacementValidator
-from pykryptos.time import Decipher
+from pykryptos.cipher import Decipher
 
 class Parser():
     def parse_args(self):
@@ -55,5 +55,6 @@ class Parser():
         args = parser.parse_args()
         args.alphabet = [c for c in args.alphabet.upper()]
         args.replace  = [(a, b) for a, b in [c for c in args.replace.upper().split(',')]]
+        args.ciphertext = args.ciphertext.upper()
         return args
 

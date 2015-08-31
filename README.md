@@ -53,10 +53,13 @@ This will trigger using the application defaults starting at the current time.
 This is a **Proof of Concept (PoC)** only.
 It is by no-means conclusive and is only being carried out as a part time exercise.
 
+## History
+* **31-08-2015** - *Bug fix - Cipher was returning invalid results when reading from the clock*.  
+A problem existed with the cipher which resulted in the clock being read at least one minute behind, leading to duplicate sets of data being obtained and characters being encoded with an invalid set. Updated to accomodate this.
+* **30-08-2015** - *Application refactoring, added unit tests for Decipher class*
+
 ## To-Do
-* [M] Refactor classes into relvant sub-modules
 * [M] Put some tests around the application
-* [C] Add in functionality for enciphering messages as well as deciphering them
 * [W] Add graphical controls for updating the alphabet, associated replacements, speed and increment
 
 Contributions welcome.

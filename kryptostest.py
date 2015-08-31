@@ -3,7 +3,7 @@ import mock
 import time
 from ddt import data, ddt, unpack
 
-from pykryptos.time import Decipher
+from pykryptos.cipher import Decipher
 
 class TestArgs():
     replacements = [('A', 'E'), ('Q', 'L'), ('U', 'O')]

@@ -1,5 +1,5 @@
 from argparse import Action
-from pykryptos.time import Decipher
+from pykryptos.cipher import Decipher
 from datetime import datetime
 import re
 

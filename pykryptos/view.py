@@ -1,11 +1,17 @@
 import curses
-from pykryptos.time import Decipher
-from pykryptos.lamps import Lamp, LampType
+from pykryptos.cipher import Decipher
+from pykryptos.lamps import LampType
+
+class TimeItem():
+    def __init__(self, character='',log=None,time=None):
+        self.character = character
+        self.log       = log
+        self.time      = time
 
 class LogItem():
     def __init__(self, time, char, index):
-        if len(char) != 1:
-            raise ValueError('\'char\' must be a single character')
+        #if len(char) != 1:
+        #    raise ValueError('\'char\' must be a single character')
         self.time = time
         self.text = char
         self.index = index
@@ -97,11 +103,6 @@ class Log(object):
         self.window.refresh()
         return self
 
-class TimeItem():
-    character = ''
-    log       = None
-    time      = None
-
 class Clock():
     PANEL_TYPES = [
         LampType( # seconds
@@ -143,7 +144,7 @@ class Clock():
     log = None
 
     def __init__(self, time, decipher):
-        self.time = time
+        self.time = time.time
         self.decipher = decipher
         self.screen = curses.initscr()
         curses.noecho()
@@ -158,6 +159,7 @@ class Clock():
         curses.curs_set(0)
         self._create_clock_face()
         self.current = ''
+        self.update(time)
 
     def _create_clock_face(self):
         screen_h, screen_w = self.screen.getmaxyx()
@@ -179,7 +181,8 @@ class Clock():
             time = self.time
         )
 
-    def get_visible(self):
+    @property
+    def visible(self):
         visible = []
         for lamp_type, lamp in zip(self.PANEL_TYPES, self.lamps):
             for i, window in enumerate(lamp):
@@ -195,8 +198,10 @@ class Clock():
                 window.state = lamp_type.state(i, time_item.time)
                 if lamp_type.id == LampType.SECONDS:
                     window.update(text = time_item.character)
-        if time_item.log is not None:
-            self.log += time_item.log
+        return self
+
+    def write(self, log_item):
+        self.log += log_item
 
     def stop(self):
         curses.nocbreak()

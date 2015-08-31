@@ -51,7 +51,7 @@ class LampType():
         self.state  = state
 
     def create_windows(self, decipher, y, screen_w):
-        """Make a row of n center-justified curses windows."""
+        """Make a row of n center-justified lamp windows."""
         screen_mid = screen_w // 2
         total_width = self.n * self.width + (self.n - 1) * self.margin
         left = screen_mid - total_width // 2

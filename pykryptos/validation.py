@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from argparse import Action
 from pykryptos.cipher import Decipher
 from datetime import datetime
@@ -5,30 +6,11 @@ import re
 
 class AlphabetValidator(Action):
     def __call__(self, parser, namespace, values, option_string=None):
-        if len(namespace.replace) != 8:
+        if len(values) != len(Decipher.clock_alphabet):
             parser.error(
-                'Alphabet is reliant on the replace parameter being set and containing valid replacements'
+                'Invalid length for alphabet. Must be ' + str(len(Decipher.clock_alphabet)).zfill(2) + ' characters in length'
             )
-
-        if len(values) != len(Decipher.alphabet):
-            parser.error(
-                'Invalid length for alphabet. Must be ' + str(len(Decipher.alphabet)).zfill(2) + ' characters in length'
-            )
-        setattr(namespace, self.dest, values)
-
-class ReplacementValidator(Action):
-    def __call__(self, parser, namespace, values, option_string=None):
-        if len(namespace.alphabet) == 0:
-            parser.error('alphabet is required for replacements')
-        if not re.match('[A-Z]{2},[A-Z]{2},[A-Z]{2}', values):
-            parser.error('replacements must match the format `CR,CR,CR`')
-
-        replacements = [(a, b) for a, b in [c for c in values.upper().split(',')]]
-        for replacement in replacements:
-            if replacement[0] in namespace.alphabet and replacement[1] not in namespace.alphabet:
-                continue
-            parser.error('replacements contains invalid values')
-        setattr(namespace, self.dest, values)
+        setattr(namespace, self.dest, values.upper())
 
 class TimeValidator(Action):
     def __call__(self, parser, namespace, values, option_string=None):
@@ -41,4 +23,9 @@ class TimeValidator(Action):
             parser.error('Time must be in the format HH:MM:SS')
         setattr(namespace, self.dest, values)
 
-
+class KeywordValidator(Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        subset = ''.join(OrderedDict.fromkeys(values))
+        if len(values) != len(subset):
+            parser.error('Keyword should not contain duplicate letters')
+        setattr(namespace, self.dest, values.upper())

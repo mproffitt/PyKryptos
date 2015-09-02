@@ -1,5 +1,5 @@
 from argparse import ArgumentParser, Action
-from pykryptos.validation import TimeValidator, AlphabetValidator, ReplacementValidator
+from pykryptos.validation import TimeValidator, AlphabetValidator, KeywordValidator
 from pykryptos.cipher import Decipher
 
 class Parser():
@@ -27,16 +27,16 @@ class Parser():
         )
         parser.add_argument(
             '--alphabet',
-            help='An alternative alphabet to use',
-            default=''.join(Decipher.alphabet),
+            help='An alphabet to use for the clock face (max 23 characters)',
+            default=''.join(Decipher.clock_alphabet),
             action=AlphabetValidator
         )
 
         parser.add_argument(
-            '--replace',
-            help='A list of characters and their replacements',
-            default=','.join([''.join(a) for a in Decipher.replacements]),
-            action=ReplacementValidator
+            '--keyword',
+            help='A keyword to use for the second alphabet',
+            default='',
+            action=KeywordValidator
         )
 
         parser.add_argument(
@@ -52,9 +52,9 @@ class Parser():
             default=Decipher.ciphertext
         )
 
-        args = parser.parse_args()
-        args.alphabet = [c for c in args.alphabet.upper()]
-        args.replace  = [(a, b) for a, b in [c for c in args.replace.upper().split(',')]]
+        args            = parser.parse_args()
+        args.alphabet   = [c for c in args.alphabet.upper()]
         args.ciphertext = args.ciphertext.upper()
+        args.keyword    = args.keyword.upper()
         return args
 

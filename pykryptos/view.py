@@ -4,17 +4,16 @@ from pykryptos.lamps import LampType
 from time import sleep
 
 class TimeItem():
-    def __init__(self, character=' ',log=None,time=None):
+    def __init__(self, character=' ',log=None,time=None, keyword_character=' '):
         self.character = character
+        self.keyword_character = keyword_character
         self.log       = log
         self.time      = time
 
 class LogItem():
     def __init__(self, time, char, index):
-        #if len(char) != 1:
-        #    raise ValueError('\'char\' must be a single character')
-        self.time = time
-        self.text = char
+        self.time  = time
+        self.text  = char
         self.index = index
 
 class LogLine():
@@ -40,17 +39,18 @@ class Log(object):
 
     lines = []
     def __init__(self, decipher, y, x, height, width, time):
-        self.decipher = decipher
-        self.y = y
-        self.x = x
-        self.height    = height
-        self.width     = width
-        self.color     = curses.color_pair(1)
-        self.highlight = curses.color_pair(4)
-        self.time      = time
+        self.decipher        = decipher
+        self.y               = y
+        self.x               = x
+        self.height          = height
+        self.width           = width
+        self.color           = curses.color_pair(1)
+        self.highlight       = curses.color_pair(4)
+        self.time            = time
+        self.window          = curses.newwin(height, width, y, x)
+        self.cipher_offset   = 12
         self.writable_height = self.height - 4
-        self.window    = curses.newwin(height, width, y, x)
-        self.cipher_offset = 12
+
         self.window.bkgd(' ', self.color)
         self.window.box()
         self.window.refresh()
@@ -59,7 +59,7 @@ class Log(object):
     def __add__(self, other):
         if not isinstance(other, LogItem):
             raise TypeError('Trying to add invalid types \'Log\' and \'' + str(type(other).__name__) + '\'')
-        self.time = other.time
+        self.time  = other.time
         self.index = other.index if other.index > 0 else (self.decipher.length + 1) + other.index
         return self.__setitem__(0, other.text)
 
@@ -106,35 +106,43 @@ class Log(object):
 
 class Clock():
     PANEL_TYPES = [
-        LampType( # seconds
+        LampType(
             id=LampType.SECONDS,
             n=1,
             width=10,
             color=lambda i:2,
             state=lambda i, t: t.second % 2 == 0
         ),
-        LampType( # five hours
+        LampType(
+            id=LampType.KEYWORD_TICKER,
+            n=1,
+            width=21,
+            height=3,
+            color=lambda i:1,
+            state=lambda i, t: True
+        ),
+        LampType(
             id=LampType.FIVE_HOURS,
             n=4,
             width=10,
             color=lambda i:2,
             state=lambda i, t: i < t.hour // 5
         ),
-        LampType( # hours
+        LampType(
             id=LampType.HOURS,
             n=4,
             width=10,
             color=lambda i:2,
             state=lambda i, t: i < t.hour % 5
         ),
-        LampType( # five minutes
+        LampType(
             id=LampType.FIVE_MINUTES,
             n=11,
             width=3,
             color=lambda i:2 if i in (2, 5, 8) else 3,
             state=lambda i, t: i < t.minute // 5
         ),
-        LampType( # minutes
+        LampType(
             id=LampType.MINUTES,
             n=4,
             width=10,
@@ -145,9 +153,11 @@ class Clock():
     log = None
 
     def __init__(self, time, decipher):
-        self.time = time.time
+        self.time     = time.time
         self.decipher = decipher
-        self.screen = curses.initscr()
+        self.screen   = curses.initscr()
+        self.current  = ''
+
         curses.noecho()
         curses.cbreak()
         self.screen.nodelay(True)
@@ -158,9 +168,14 @@ class Clock():
         curses.init_pair(2, curses.COLOR_WHITE, curses.COLOR_RED)
         curses.init_pair(3, curses.COLOR_WHITE, curses.COLOR_YELLOW)
         curses.init_pair(4, curses.COLOR_RED,   -1)
+        curses.init_pair(5, 254,                -1)
+        color = 237
+        for i in range (6, 14):
+            curses.init_pair(i, color, -1)
+            color += 1
+
         curses.curs_set(0)
         self._create_clock_face()
-        self.current = ''
         self.update(time)
 
     def _create_clock_face(self):
@@ -174,13 +189,14 @@ class Clock():
         for lamp_type in self.PANEL_TYPES:
             self.lamps.append(lamp_type.create_windows(self.decipher, y, screen_w))
             y += lamp_type.height + lamp_type.margin
+
         self.log = Log(
             self.decipher,
             x = (screen_w // 2) - (Log.DEFAULT_WIDTH // 2),
             y = y,
             width  = Log.DEFAULT_WIDTH,
             height = Log.DEFAULT_HEIGHT,
-            time = self.time
+            time   = self.time
         )
         self.screen.addstr(
             (y + Log.DEFAULT_HEIGHT),
@@ -188,6 +204,7 @@ class Clock():
             'Help: \'p\' pause clock. \'c\' continue clock. \'q\' quit',
             curses.color_pair(1)
         )
+        self.screen.refresh()
         self.y = (y + Log.DEFAULT_HEIGHT)
 
     def pause_or_quit(self, key):
@@ -219,13 +236,39 @@ class Clock():
                     sleep(0.5)
 
 
+    def _get_ticker_text(self, window):
+        alphabet      = self.decipher.keyword_alphabet
+        slice_size    = 8
+        index         = self.decipher.keyword_index
+        keyword_char  = alphabet[index]
+        keyword_slice_after  = []
+        keyword_slice_before = []
+
+        keyword_slice_before = alphabet[(index - slice_size):index]
+        if index <= slice_size:
+            keyword_slice_before = alphabet[:index]
+
+        if len(keyword_slice_before) <= slice_size:
+            keyword_slice_before = alphabet[((len(alphabet) - (slice_size - index))):] + keyword_slice_before
+
+        keyword_slice_after = alphabet[(index + 1):((index + 1) + slice_size)]
+        if index >= ((len(alphabet) - 1) - slice_size):
+            keyword_slice_after = alphabet[(index + 1):]
+
+        if index >= ((len(alphabet) - 1) - slice_size):
+            keyword_slice_after = keyword_slice_after + alphabet[:(
+                slice_size - (len(alphabet) - 1 - index)
+            )]
+
+        window.ticker_update(keyword_slice_before, keyword_char, keyword_slice_after)
+
     @property
     def visible(self):
         visible = []
         for lamp_type, lamp in zip(self.PANEL_TYPES, self.lamps):
             for i, window in enumerate(lamp):
                 current = window.text if window.state else False
-                if current is not False and lamp_type.id != LampType.SECONDS:
+                if current is not False and lamp_type.id not in [LampType.SECONDS, LampType.KEYWORD_TICKER]:
                     visible.append(current)
         return visible
 
@@ -236,6 +279,9 @@ class Clock():
                 window.state = lamp_type.state(i, time_item.time)
                 if lamp_type.id == LampType.SECONDS:
                     window.update(text = time_item.character)
+                if lamp_type.id == LampType.KEYWORD_TICKER:
+                    self._get_ticker_text(window)
+
         return self
 
     def write(self, log_item):

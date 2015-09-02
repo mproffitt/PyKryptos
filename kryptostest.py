@@ -6,14 +6,14 @@ from ddt import data, ddt, unpack
 from pykryptos.cipher import Decipher
 
 class TestArgs():
-    replacements = [('A', 'E'), ('Q', 'L'), ('U', 'O')]
-    alphabet = [
+    keyword    = ''
+    ciphertext = 'HELLOWORLD'
+    alphabet   = [
         'W', 'X', 'Y', 'Z',
         'S', 'T', 'U', 'V',
         'F', 'G', 'H', 'I', 'J', 'K', 'M', 'N', 'P', 'Q', 'R',
         'A', 'B', 'C', 'D'
     ]
-    ciphertext = 'HELLOWORLD'
 
 @ddt
 class DecipherTest(unittest.TestCase):
@@ -57,7 +57,7 @@ class DecipherTest(unittest.TestCase):
     )
     @unpack
     def test_add_character(self, character, visible, expected):
-        assert self.decipher.add(character, visible) == expected
+        assert self.decipher.add(character, visible, 'A') == expected
 
     @data(
         ['R', ['W', 'X', 'S', 'T', 'F','G','H','I','J','K','M','N','P','Q','R','A','B'],         'H'],
@@ -73,8 +73,9 @@ class DecipherTest(unittest.TestCase):
     )
     @unpack
     def test_subtract_character(self, character, visible, expected):
-        assert self.decipher.subtract(character, visible) == expected
+        assert self.decipher.subtract(character, visible, 'A') == expected
 
     def test_get_next_cipher(self):
         for character in [c for c in TestArgs.ciphertext]:
             assert self.decipher.get_next_cipher() == character
+

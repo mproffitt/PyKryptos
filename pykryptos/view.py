@@ -1,6 +1,7 @@
 import curses
 from pykryptos.cipher import Decipher
 from pykryptos.lamps import LampType
+from time import sleep
 
 class TimeItem():
     def __init__(self, character=' ',log=None,time=None):
@@ -149,13 +150,14 @@ class Clock():
         self.screen = curses.initscr()
         curses.noecho()
         curses.cbreak()
+        self.screen.nodelay(True)
         self.screen.keypad(1)
         curses.start_color()
         curses.use_default_colors()
-        curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)
+        curses.init_pair(1, curses.COLOR_WHITE, -1)
         curses.init_pair(2, curses.COLOR_WHITE, curses.COLOR_RED)
         curses.init_pair(3, curses.COLOR_WHITE, curses.COLOR_YELLOW)
-        curses.init_pair(4, curses.COLOR_RED, curses.COLOR_BLACK)
+        curses.init_pair(4, curses.COLOR_RED,   -1)
         curses.curs_set(0)
         self._create_clock_face()
         self.current = ''
@@ -180,6 +182,40 @@ class Clock():
             height = Log.DEFAULT_HEIGHT,
             time = self.time
         )
+        self.screen.addstr(
+            (y + Log.DEFAULT_HEIGHT),
+            (screen_w // 2) - (Log.DEFAULT_WIDTH // 2) + 1,
+            'Help: \'p\' pause clock. \'c\' continue clock',
+            curses.color_pair(1)
+        )
+        self.y = (y + Log.DEFAULT_HEIGHT)
+
+    def pause_if_needed(self, key):
+        screen_h, screen_w = self.screen.getmaxyx()
+        """ enable pausing of the application """
+        if key == 'p':
+            self.screen.addstr(
+                self.y,
+                (screen_w // 2) + (Log.DEFAULT_WIDTH // 2) - 11,
+                '= PAUSED =',
+                curses.color_pair(1)
+            )
+            self.screen.refresh()
+            while True:
+                try:
+                    key = self.screen.getkey()
+                    if key == 'c':
+                        self.screen.addstr(
+                            self.y,
+                            (screen_w // 2) + (Log.DEFAULT_WIDTH // 2) - 11,
+                            '          ',
+                            curses.color_pair(1)
+                        )
+                        self.screen.refresh()
+                        return
+                except:
+                    sleep(0.5)
+
 
     @property
     def visible(self):

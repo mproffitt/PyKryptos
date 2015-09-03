@@ -185,14 +185,16 @@ class Clock():
         self.screen.addstr(
             (y + Log.DEFAULT_HEIGHT),
             (screen_w // 2) - (Log.DEFAULT_WIDTH // 2) + 1,
-            'Help: \'p\' pause clock. \'c\' continue clock',
+            'Help: \'p\' pause clock. \'c\' continue clock. \'q\' quit',
             curses.color_pair(1)
         )
         self.y = (y + Log.DEFAULT_HEIGHT)
 
-    def pause_if_needed(self, key):
+    def pause_or_quit(self, key):
         screen_h, screen_w = self.screen.getmaxyx()
         """ enable pausing of the application """
+        if key == 'q':
+            raise KeyboardInterrupt()
         if key == 'p':
             self.screen.addstr(
                 self.y,

@@ -47,7 +47,7 @@ class Mengenlehreuhr():
                     key = self.clock.screen.getkey()
                 except:
                     pass
-                self.clock.pause_if_needed(key)
+                self.clock.pause_or_quit(key)
                 self._update(self.time)
                 if self.args.increment == 'minute':
                     if self.time.second & 0x1:

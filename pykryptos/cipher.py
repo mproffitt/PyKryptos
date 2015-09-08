@@ -3,7 +3,7 @@ class Decipher():
     current_cipher_char = ''
     cipher_index        = 0
     alpha_index         = 0
-    keyword_index       = 25
+    keyword_index       = 0
 
     actual_alphabet = [
         ' ', 'A', 'B', 'C', 'D', 'E', 'F', 'G',
@@ -90,3 +90,21 @@ class Decipher():
         index = index if index > 0 else (self.alphalen + index)
         return self.get_character(index)
 
+    def ceaser(self, message, shift):
+        """ perform rot(n) on message """
+        message    = message.upper()
+        ciphertext = ''
+        for c in message:
+            i = ord(c) + shift
+            if i > ord('Z'):
+                i -= 26
+            elif i < ord('A'):
+                i = ord('Z') - (ord('A') - i)
+            ciphertext += chr(i)
+        return ciphertext
+
+    def rotate(self, message, shift):
+        """ rotate characters within the message by cutting off the start and pasting on the end """
+        rotated_message = [c for i, c in enumerate(message) if i not in range(shift)]
+        rotated_message += [c for i, c in enumerate(message) if i in range(shift)]
+        return rotated_message

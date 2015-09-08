@@ -1,3 +1,5 @@
+from __future__ import print_function
+import sys
 import curses
 from pykryptos.cipher import Decipher
 from pykryptos.lamps import LampType
@@ -104,6 +106,76 @@ class Log(object):
         self.window.refresh()
         return self
 
+
+class VigenereGrid():
+    DEFAULT_HEIGHT = 30
+    DEFAULT_WIDTH  = 60
+    window         = None
+    decipher       = None
+
+    def __init__(self, decipher, y, x):
+        self.decipher        = decipher
+        self.color           = curses.color_pair(1)
+        self.highlight       = curses.color_pair(4)
+        self.window          = curses.newwin(self.DEFAULT_HEIGHT, self.DEFAULT_WIDTH, y, x)
+        self.writable_height = self.DEFAULT_HEIGHT - 4
+        self.window.bkgd(' ', self.color)
+        self.window.box()
+        self.window.refresh()
+        print('x = ' + str(x) + ' y = ' + str(y), file=sys.stderr)
+
+    def update(self):
+        self.window.erase()
+        self.window.box()
+        self.window.refresh()
+        return self
+
+
+class VigenereGrid():
+    DEFAULT_HEIGHT = 28
+    DEFAULT_WIDTH  = 53
+    window         = None
+    decipher       = None
+
+    def __init__(self, decipher, y, x):
+        self.decipher        = decipher
+        self.color           = curses.color_pair(1)
+        self.highlight       = curses.color_pair(4)
+        self.window          = curses.newwin(self.DEFAULT_HEIGHT, self.DEFAULT_WIDTH, y, x)
+        self.writable_height = self.DEFAULT_HEIGHT - 4
+        self.update()
+        print('x = ' + str(x) + ' y = ' + str(y), file=sys.stderr)
+
+    def update(self):
+        self.window.bkgd(' ', self.color)
+        self.write_grid()
+        self.window.box()
+        self.window.refresh()
+
+    def write_grid(self, coordinates=(0,0)):
+        x, y = coordinates
+        for i in range (26):
+            message = self.decipher.rotate(''.join(self.decipher.keyword_alphabet), i)
+            if i == x:
+                self.window.addstr(
+                    (i + 1), 1, ' '.join(message[:y + 1]),
+                    self.color
+                )
+                self.window.addstr(
+                    (i + 1), (y * 2), ' '.join(message[y+1:y+2]),
+                    self.highlight
+                )
+                self.window.addstr(
+                    (i + 1), (y * 2) + 2, ' '.join(message[y+2:]),
+                    self.color
+                )
+            else:
+                self.window.addstr(
+                    (i + 1), 1, ' '.join(message),
+                    self.color
+                )
+
+
 class Clock():
     PANEL_TYPES = [
         LampType(
@@ -150,13 +222,15 @@ class Clock():
             state=lambda i, t: i < t.minute % 5
         )
     ]
-    log = None
+    log           = None
+    vigenere_grid = None
 
     def __init__(self, time, decipher):
         self.time     = time.time
         self.decipher = decipher
         self.screen   = curses.initscr()
         self.current  = ''
+        color         = 237
 
         curses.noecho()
         curses.cbreak()
@@ -169,7 +243,6 @@ class Clock():
         curses.init_pair(3, curses.COLOR_WHITE, curses.COLOR_YELLOW)
         curses.init_pair(4, curses.COLOR_RED,   -1)
         curses.init_pair(5, 254,                -1)
-        color = 237
         for i in range (6, 14):
             curses.init_pair(i, color, -1)
             color += 1
@@ -181,13 +254,18 @@ class Clock():
     def _create_clock_face(self):
         screen_h, screen_w = self.screen.getmaxyx()
 
+        print('screen_w = ' + str(screen_w), file=sys.stderr)
+        vigenere_y = (screen_h // 2) - ((VigenereGrid.DEFAULT_HEIGHT + Log.DEFAULT_HEIGHT) // 2) - 1
+        vigenere_x = ((screen_w // 2) - (VigenereGrid.DEFAULT_WIDTH // 2)) + 25
+
         # Try and center the clock on the screen
         y = (screen_h // 2) - (
             (((LampType.DEFAULT_HEIGHT + LampType.DEFAULT_MARGIN) * len(self.PANEL_TYPES)) + Log.DEFAULT_HEIGHT) // 2
         )
+
         self.lamps = []
         for lamp_type in self.PANEL_TYPES:
-            self.lamps.append(lamp_type.create_windows(self.decipher, y, screen_w))
+            self.lamps.append(lamp_type.create_windows(self.decipher, y, (screen_w - VigenereGrid.DEFAULT_WIDTH)))
             y += lamp_type.height + lamp_type.margin
 
         self.log = Log(
@@ -197,6 +275,12 @@ class Clock():
             width  = Log.DEFAULT_WIDTH,
             height = Log.DEFAULT_HEIGHT,
             time   = self.time
+        )
+
+        self.vigenere_grid = VigenereGrid(
+            self.decipher,
+            vigenere_y,
+            vigenere_x
         )
         self.screen.addstr(
             (y + Log.DEFAULT_HEIGHT),
@@ -239,7 +323,10 @@ class Clock():
     def _get_ticker_text(self, window):
         alphabet      = self.decipher.keyword_alphabet
         slice_size    = 8
-        index         = self.decipher.keyword_index
+        index         = (
+            self.decipher.keyword_index - 1 if self.decipher.keyword_index > 0 else
+                len(self.decipher.keyword_alphabet) - 1
+        )
         keyword_char  = alphabet[index]
         keyword_slice_after  = []
         keyword_slice_before = []
@@ -281,7 +368,7 @@ class Clock():
                     window.update(text = time_item.character)
                 if lamp_type.id == LampType.KEYWORD_TICKER:
                     self._get_ticker_text(window)
-
+        self.vigenere_grid.update()
         return self
 
     def write(self, log_item):

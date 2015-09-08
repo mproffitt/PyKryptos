@@ -69,14 +69,18 @@ class Mengenlehreuhr():
     def _update(self, time):
         time_item = self._get_time_item(time)
         if time.second % 2 == 0:
-            time_item.character    = self.decipher.get_next_cipher()
-            time_item.keyword_char = self.decipher.get_next_keyword()
+            time_item.character         = self.decipher.get_next_cipher()
+            time_item.keyword_character = self.decipher.get_next_keyword()
+            time_item.visible           = self.clock.visible
         self.clock.update(time_item)
-        character = (
-            self.decipher.add(time_item.character, self.clock.visible, time_item.keyword_character)
-            if self.args.method == 'add' else
-                self.decipher.subtract(time_item.character, self.clock.visible, time_item.keyword_character)
-        )
+        try:
+            character = (
+                self.decipher.add(time_item.character, self.clock.visible, time_item.keyword_character)
+                if self.args.method == 'add' else
+                    self.decipher.subtract(time_item.character, self.clock.visible, time_item.keyword_character)
+            )
+        except ValueError:
+            pass
         if time.second % 2 == 0:
             self.clock.write(
                 LogItem(

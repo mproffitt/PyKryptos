@@ -1,3 +1,21 @@
+from __future__ import print_function
+import sys
+
+class Coordinate():
+    x = 0
+    y = 0
+
+
+class Square():
+    cipher_index    = 0
+    character_index = 0
+    keyword_index   = 0
+    visible_index   = 0
+    top_left        = None
+    bottom_right    = None
+    top_right       = None
+    bottom_left     = None
+
 class Decipher():
     ciphertext          = 'OBKRUOXOGHULBSOLIFBBWFLRVQQPRNGKSSOTWTQSJQSSEKZZWATJKLUDIAWINFBNYPVTTMZFPKWGDKZXTJCDIGKUHUAUEKCAR'
     current_cipher_char = ''
@@ -6,7 +24,7 @@ class Decipher():
     keyword_index       = 0
 
     actual_alphabet = [
-        ' ', 'A', 'B', 'C', 'D', 'E', 'F', 'G',
+        'A', 'B', 'C', 'D', 'E', 'F', 'G',
         'H', 'I', 'J', 'K', 'L', 'M', 'N',
         'O', 'P', 'Q', 'R', 'S', 'T', 'U',
         'V', 'W', 'X', 'Y', 'Z'
@@ -27,6 +45,15 @@ class Decipher():
     def alphalen(self):
         """ Get the length of the configured alphabet """
         return len(self.actual_alphabet) - 1
+
+    @property
+    def clocklen(self):
+        """ return the length of the clock alphabet """
+        return len(self.clock_alphabet) - 1
+
+    @property
+    def keyindex(self):
+        return self.keyword_index - 1 if self.keyword_index > 0 else len(self.keyword_alphabet) - 1
 
     def __init__(self, args):
         self.ciphertext       = args.ciphertext
@@ -63,6 +90,10 @@ class Decipher():
         """ Get the alphabetical index of the given character from the keyword alphabet """
         return self.keyword_alphabet.index(character) if character != ' ' else 0
 
+    def get_cipher_index(self):
+        """ Gets the current cipher index """
+        return self.cipher_index - 1
+
     def get_character(self, index):
         """ Get the character at index i """
         index = index if index != 0 else self.alphalen
@@ -70,25 +101,43 @@ class Decipher():
 
     def get_index_from_visible_chars(self, visible_chars):
         """ Gets the character represented by the sum of the given list of characters mod self.alphalen """
-        index = sum([self.get_index(c) for c in visible_chars]) % self.alphalen
+        index = sum([self.get_index(c) for c in visible_chars]) % self.clocklen
         return index if index != 0 else self.alphalen
 
     def add(self, character, visible_chars, keyword_char):
         """ gets the sum of c + E[vc] % len where c is a character, vc is a set of visible characters and len is 26 """
         character_index = self.get_index(character)
-        visible_index = self.get_index_from_visible_chars(visible_chars)
-        visible_index += self.get_keyword_index(keyword_char)
+        visible_index   = self.get_index_from_visible_chars(visible_chars)
+        visible_index  += self.get_keyword_index(keyword_char)
         index = (character_index + visible_index) % self.alphalen
         return self.get_character(index)
 
     def subtract(self, character, visible_chars, keyword_char):
         """ inverse of add """
         character_index = self.get_index(character)
-        visible_index = self.get_index_from_visible_chars(visible_chars)
-        visible_index += self.get_keyword_index(keyword_char)
+        visible_index   = self.get_index_from_visible_chars(visible_chars)
+        visible_index  += self.get_keyword_index(keyword_char)
         index = (character_index - visible_index)
         index = index if index > 0 else (self.alphalen + index)
         return self.get_character(index)
+
+    def square(self, character, visible_chars, keyword_char):
+        """ calculates the vigenere square of the given character """
+        modulus = self.alphalen + 1
+        square = Square()
+        square.cipher_index    = self.get_cipher_index()
+        square.character_index = self.get_index(character)
+        square.visible_index   = self.get_index_from_visible_chars(visible_chars)
+        square.keyword_index   = self.get_keyword_index(keyword_char)
+
+        coord = Coordinate()
+        coord.x = (square.cipher_index - square.character_index) % modulus
+        y = (modulus - coord.x) + square.character_index
+        y = modulus + y if y < 0 else y if y < modulus else y % modulus
+        coord.y = y
+        square.top_left = coord
+
+        return square
 
     def ceaser(self, message, shift):
         """ perform rot(n) on message """
@@ -108,3 +157,4 @@ class Decipher():
         rotated_message = [c for i, c in enumerate(message) if i not in range(shift)]
         rotated_message += [c for i, c in enumerate(message) if i in range(shift)]
         return rotated_message
+

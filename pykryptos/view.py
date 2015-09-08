@@ -6,11 +6,12 @@ from pykryptos.lamps import LampType
 from time import sleep
 
 class TimeItem():
-    def __init__(self, character=' ',log=None,time=None, keyword_character=' '):
-        self.character = character
+    def __init__(self, character=' ',log=None,time=None, keyword_character=' ', visible = []):
+        self.character         = character
         self.keyword_character = keyword_character
-        self.log       = log
-        self.time      = time
+        self.log               = log
+        self.time              = time
+        self.visible           = visible
 
 class LogItem():
     def __init__(self, time, char, index):
@@ -108,30 +109,6 @@ class Log(object):
 
 
 class VigenereGrid():
-    DEFAULT_HEIGHT = 30
-    DEFAULT_WIDTH  = 60
-    window         = None
-    decipher       = None
-
-    def __init__(self, decipher, y, x):
-        self.decipher        = decipher
-        self.color           = curses.color_pair(1)
-        self.highlight       = curses.color_pair(4)
-        self.window          = curses.newwin(self.DEFAULT_HEIGHT, self.DEFAULT_WIDTH, y, x)
-        self.writable_height = self.DEFAULT_HEIGHT - 4
-        self.window.bkgd(' ', self.color)
-        self.window.box()
-        self.window.refresh()
-        print('x = ' + str(x) + ' y = ' + str(y), file=sys.stderr)
-
-    def update(self):
-        self.window.erase()
-        self.window.box()
-        self.window.refresh()
-        return self
-
-
-class VigenereGrid():
     DEFAULT_HEIGHT = 28
     DEFAULT_WIDTH  = 53
     window         = None
@@ -143,38 +120,53 @@ class VigenereGrid():
         self.highlight       = curses.color_pair(4)
         self.window          = curses.newwin(self.DEFAULT_HEIGHT, self.DEFAULT_WIDTH, y, x)
         self.writable_height = self.DEFAULT_HEIGHT - 4
-        self.update()
-        print('x = ' + str(x) + ' y = ' + str(y), file=sys.stderr)
+        #self.update(self.decipher.square(self.decipher.ciphertext[(self.decipher.cipher_index - 1)]))
 
-    def update(self):
+    def update(self, coordinates):
         self.window.bkgd(' ', self.color)
-        self.write_grid()
+        self.write_grid(coordinates)
         self.window.box()
         self.window.refresh()
 
-    def write_grid(self, coordinates=(0,0)):
-        x, y = coordinates
-        for i in range (26):
+    def write_grid(self, coordinates):
+        x = coordinates.top_left.x
+        y = coordinates.top_left.y
+        color     = self.color
+        highlight = self.highlight
+
+        for i in range (len(self.decipher.keyword_alphabet)):
             message = self.decipher.rotate(''.join(self.decipher.keyword_alphabet), i)
+            color     = self.color     if i != self.decipher.keyindex and i != x else curses.color_pair(15)
+            highlight = self.highlight if i != self.decipher.keyindex and i != x else curses.color_pair(16)
+
             if i == x:
                 self.window.addstr(
-                    (i + 1), 1, ' '.join(message[:y + 1]),
-                    self.color
+                    (i + 1), 1, ' '.join(message[:y]),
+                    color
                 )
                 self.window.addstr(
-                    (i + 1), (y * 2), ' '.join(message[y+1:y+2]),
-                    self.highlight
+                    (i + 1), (y * 2) + 1, ' '.join(message[y:y+1]),
+                    highlight
                 )
-                self.window.addstr(
-                    (i + 1), (y * 2) + 2, ' '.join(message[y+2:]),
-                    self.color
-                )
+                if y <= (len(message) - 2):
+                    self.window.addstr(
+                        (i + 1), (y * 2) + 3, ' '.join(message[y+1:]),
+                        color
+                    )
             else:
                 self.window.addstr(
-                    (i + 1), 1, ' '.join(message),
-                    self.color
+                    (i + 1), 1, ' '.join(message[:y]),
+                    color
                 )
-
+                self.window.addstr(
+                    (i + 1), (y * 2) + 1, ' '.join(message[y:y+1]),
+                    curses.color_pair(16)
+                )
+                if y <= (len(message) - 2):
+                    self.window.addstr(
+                        (i + 1), (y * 2) + 3, ' '.join(message[y+1:]),
+                        color
+                    )
 
 class Clock():
     PANEL_TYPES = [
@@ -246,6 +238,8 @@ class Clock():
         for i in range (6, 14):
             curses.init_pair(i, color, -1)
             color += 1
+        curses.init_pair(15, curses.COLOR_BLACK, 77)
+        curses.init_pair(16, curses.COLOR_RED, 77)
 
         curses.curs_set(0)
         self._create_clock_face()
@@ -368,7 +362,14 @@ class Clock():
                     window.update(text = time_item.character)
                 if lamp_type.id == LampType.KEYWORD_TICKER:
                     self._get_ticker_text(window)
-        self.vigenere_grid.update()
+        if time_item.character != ' ':
+            self.vigenere_grid.update(
+                self.decipher.square(
+                    time_item.character,
+                    time_item.visible,
+                    time_item.keyword_character
+                )
+            )
         return self
 
     def write(self, log_item):

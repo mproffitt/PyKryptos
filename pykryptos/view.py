@@ -136,8 +136,8 @@ class VigenereGrid():
 
         for i in range (len(self.decipher.keyword_alphabet)):
             message = self.decipher.rotate(''.join(self.decipher.keyword_alphabet), i)
-            color     = self.color     if i != self.decipher.keyindex and i != x else curses.color_pair(15)
-            highlight = self.highlight if i != self.decipher.keyindex and i != x else curses.color_pair(16)
+            color     = self.color     if i != self.decipher.keyindex and i != x else curses.color_pair(15) if i == x else curses.color_pair(17)
+            highlight = self.highlight if i != self.decipher.keyindex and i != x else curses.color_pair(16) if i == x else curses.color_pair(18)
 
             if i == x:
                 self.window.addstr(
@@ -160,7 +160,7 @@ class VigenereGrid():
                 )
                 self.window.addstr(
                     (i + 1), (y * 2) + 1, ' '.join(message[y:y+1]),
-                    curses.color_pair(16)
+                    curses.color_pair(15 if i != x else 16)
                 )
                 if y <= (len(message) - 2):
                     self.window.addstr(
@@ -239,7 +239,10 @@ class Clock():
             curses.init_pair(i, color, -1)
             color += 1
         curses.init_pair(15, curses.COLOR_BLACK, 77)
-        curses.init_pair(16, curses.COLOR_RED, 77)
+        curses.init_pair(16, curses.COLOR_RED,   77)
+        curses.init_pair(17, curses.COLOR_BLACK, 179)
+        curses.init_pair(18, curses.COLOR_RED,   179)
+
 
         curses.curs_set(0)
         self._create_clock_face()

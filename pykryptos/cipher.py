@@ -22,6 +22,11 @@ class Decipher():
     cipher_index        = 0
     alpha_index         = 0
     keyword_index       = 0
+    _keyalphaindex      = 0
+    _keyword_alphabet   = []
+
+    _mask_index         = 0
+    _mask_keyword_index = 0
 
     actual_alphabet = [
         'A', 'B', 'C', 'D', 'E', 'F', 'G',
@@ -52,13 +57,40 @@ class Decipher():
         return len(self.clock_alphabet) - 1
 
     @property
+    def kryptos_alphabet(self):
+        alphabet = self._kryptos_alphabet[self._keyalphaindex:] + self._kryptos_alphabet[:self._keyalphaindex]
+        #self._keyalphaindex = self._keyalphaindex + 1 if self._keyalphaindex < len(self._kryptos_alphabet) -1 else 0
+        return alphabet
+
+    @property
     def keyindex(self):
-        return self.keyword_index - 1 if self.keyword_index > 0 else len(self.keyword_alphabet) - 1
+        return self.keyword_index - 1 if self.keyword_index > 0 else len(self._keyword_alphabet) - 1
 
     def __init__(self, args):
         self.ciphertext       = args.ciphertext
         self.clock_alphabet   = args.alphabet
-        self.keyword_alphabet = self._add_keyword(args.keyword)
+        self._keyword_alphabet = self._add_keyword(args.keyword)
+        self._kryptos_alphabet = self._add_keyword('KRYPTOS')
+
+    def get_mask_index(self):
+        increment = 3
+        mask_index = self._mask_index if self._mask_index % 2 != 0 else self._mask_keyword_index
+        self._mask_index = (
+            self._mask_index + increment
+            if self._mask_index + increment < self.alphalen else (self._mask_index + increment) - self.alphalen
+        )
+        self._mask_keyword_index = (
+            self._mask_keyword_index + increment
+            if self._mask_keyword_index + increment < self.alphalen else
+                (self._mask_keyword_index + increment) - self.alphalen
+        )
+        return mask_index
+
+    def mask(self, character):
+        index = self.get_index(character)
+        mask  = self.get_mask_index()
+        index = (index + mask) % self.alphalen
+        return self.get_character((self.alphalen + index) if index < 0 else index)
 
     def _add_keyword(self, keyword):
         alphabet = keyword + ''.join([c for c in self.actual_alphabet if c not in keyword and c != ' '])
@@ -72,8 +104,8 @@ class Decipher():
 
     def get_next_keyword(self):
         """ Gets the next character from the keyword alphabet and increments the internal pointer """
-        c = self.keyword_alphabet[self.keyword_index]
-        self.keyword_index = self.keyword_index + 1 if self.keyword_index < (len(self.keyword_alphabet) - 1) else 0
+        c = self._keyword_alphabet[self.keyword_index]
+        self.keyword_index = self.keyword_index + 1 if self.keyword_index < (len(self._keyword_alphabet) - 1) else 0
         return c
 
     def get_next_cipher(self):
@@ -88,7 +120,7 @@ class Decipher():
 
     def get_keyword_index(self, character):
         """ Get the alphabetical index of the given character from the keyword alphabet """
-        return self.keyword_alphabet.index(character) if character != ' ' else 0
+        return self._keyword_alphabet.index(character) if character != ' ' else 0
 
     def get_cipher_index(self):
         """ Gets the current cipher index """
@@ -96,7 +128,6 @@ class Decipher():
 
     def get_character(self, index):
         """ Get the character at index i """
-        index = index if index != 0 else self.alphalen
         return self.actual_alphabet[index]
 
     def get_index_from_visible_chars(self, visible_chars):
@@ -123,19 +154,41 @@ class Decipher():
 
     def square(self, character, visible_chars, keyword_char):
         """ calculates the vigenere square of the given character """
-        modulus = self.alphalen + 1
+        modulus = self.alphalen + 1 # the +1 is absolutely important for display on the vigenere grid...
         square = Square()
+
+        # first take the cipher character and add it to the visible chars (mod 26)
+        encoded_index = (
+            (self.get_index_from_visible_chars(visible_chars) -
+            self.get_index(character)) %
+            modulus
+        )
+
+        # Next get the character at this index from the keyword alphabet
+        keyword_index = self.get_keyword_index(
+            self._keyword_alphabet[encoded_index]
+        )
+
+        # Now look up this index on the standard alphabet
+        alpha_index = self.get_index(
+            self.actual_alphabet[keyword_index]
+        )
+
         square.cipher_index    = self.get_cipher_index()
         square.character_index = self.get_index(character)
         square.visible_index   = self.get_index_from_visible_chars(visible_chars)
         square.keyword_index   = self.get_keyword_index(keyword_char)
 
+        # Finally plot this on the vigenere grid
         coord = Coordinate()
+        """coord.x = (square.cipher_index - alpha_index) % modulus
+        y = (modulus - coord.x) + alpha_index
+        y = y + modulus if y < 0 else y if y < modulus else y % modulus
+        coord.y = y"""
+        coord.y = (self.alphalen // 2) #(square.cipher_index - self.get_index(character)) % modulus
         coord.x = (square.cipher_index - square.character_index) % modulus
-        y = (modulus - coord.x) + square.character_index
-        y = modulus + y if y < 0 else y if y < modulus else y % modulus
-        coord.y = y
         square.top_left = coord
+
 
         return square
 

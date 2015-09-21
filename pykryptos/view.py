@@ -120,7 +120,6 @@ class VigenereGrid():
         self.highlight       = curses.color_pair(4)
         self.window          = curses.newwin(self.DEFAULT_HEIGHT, self.DEFAULT_WIDTH, y, x)
         self.writable_height = self.DEFAULT_HEIGHT - 4
-        #self.update(self.decipher.square(self.decipher.ciphertext[(self.decipher.cipher_index - 1)]))
 
     def update(self, coordinates):
         self.window.bkgd(' ', self.color)
@@ -134,8 +133,9 @@ class VigenereGrid():
         color     = self.color
         highlight = self.highlight
 
-        for i in range (len(self.decipher.keyword_alphabet)):
-            message = self.decipher.rotate(''.join(self.decipher.keyword_alphabet), i)
+        alphabet = self.decipher.kryptos_alphabet
+        for i in range (len(alphabet)):
+            message = self.decipher.rotate(''.join(alphabet), i)
             color     = self.color     if i != self.decipher.keyindex and i != x else curses.color_pair(15) if i == x else curses.color_pair(17)
             highlight = self.highlight if i != self.decipher.keyindex and i != x else curses.color_pair(16) if i == x else curses.color_pair(18)
 
@@ -243,10 +243,8 @@ class Clock():
         curses.init_pair(17, curses.COLOR_BLACK, 179)
         curses.init_pair(18, curses.COLOR_RED,   179)
 
-
         curses.curs_set(0)
         self._create_clock_face()
-        self.update(time)
 
     def _create_clock_face(self):
         screen_h, screen_w = self.screen.getmaxyx()
@@ -318,11 +316,11 @@ class Clock():
 
 
     def _get_ticker_text(self, window):
-        alphabet      = self.decipher.keyword_alphabet
+        alphabet      = self.decipher._keyword_alphabet
         slice_size    = 8
         index         = (
             self.decipher.keyword_index - 1 if self.decipher.keyword_index > 0 else
-                len(self.decipher.keyword_alphabet) - 1
+                len(self.decipher._keyword_alphabet) - 1
         )
         keyword_char  = alphabet[index]
         keyword_slice_after  = []

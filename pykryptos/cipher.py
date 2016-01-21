@@ -41,6 +41,7 @@ class Decipher():
         'A', 'B', 'C', 'D'
     ]
 
+    direction = False
     @property
     def length(self):
         """ Get the length of the ciphertext message """
@@ -58,8 +59,15 @@ class Decipher():
 
     @property
     def kryptos_alphabet(self):
-        alphabet = self._kryptos_alphabet[self._keyalphaindex:] + self._kryptos_alphabet[:self._keyalphaindex]
-        #self._keyalphaindex = self._keyalphaindex + 1 if self._keyalphaindex < len(self._kryptos_alphabet) -1 else 0
+        if self.direction:
+            alphabet = self._kryptos_alphabet[self._keyalphaindex:] + self._kryptos_alphabet[:self._keyalphaindex]
+        else:
+            alphabet = (
+                self._kryptos_alphabet[len(self._kryptos_alphabet) - self._keyalphaindex:] +
+                self._kryptos_alphabet[:len(self._kryptos_alphabet) - self._keyalphaindex]
+            )
+
+        self._keyalphaindex = self._keyalphaindex + 1 if self._keyalphaindex < len(self._kryptos_alphabet) -1 else 0
         return alphabet
 
     @property
@@ -68,9 +76,20 @@ class Decipher():
 
     def __init__(self, args):
         self.ciphertext       = args.ciphertext
+        self.merge_reverse()
         self.clock_alphabet   = args.alphabet
         self._keyword_alphabet = self._add_keyword(args.keyword)
         self._kryptos_alphabet = self._add_keyword('KRYPTOS')
+
+    def merge_reverse(self):
+        merged_cipher = ''
+        reverse_cipher = self.ciphertext[::-1]
+        for a, b in zip(self.ciphertext, reverse_cipher):
+            a_index = self.get_index(a)
+            b_index = self.get_index(b)
+            new_index = (a_index + b_index) % 26
+            merged_cipher += self.get_character(new_index)
+        self.ciphertext = merged_cipher
 
     def get_mask_index(self):
         increment = 3
@@ -101,6 +120,9 @@ class Decipher():
         c = self.clock_alphabet[self.alpha_index]
         self.alpha_index += 1
         return c
+
+    def get_prev(self):
+        index = self.alpha_index
 
     def get_next_keyword(self):
         """ Gets the next character from the keyword alphabet and increments the internal pointer """

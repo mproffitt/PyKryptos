@@ -311,6 +311,12 @@ class Clock():
                         )
                         self.screen.refresh()
                         return
+                    elif key == 'b':
+                        self.decipher.get_prev()
+                        pass
+                    elif key == 'n':
+                        self.decipher.get_next()
+                        pass
                 except:
                     sleep(0.5)
 
